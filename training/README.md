@@ -12,6 +12,7 @@ This folder holds the complete Tsavone Consulting training website. It is a plai
 | `js/app.js` | Loads courses from the Google Sheet, runs search, filters, the fee estimator and the form. **Fee and discount rules are at the top of this file.** |
 | `data/courses-fallback.json` | A saved copy of the course list, used if the Google Sheet cannot be reached |
 | `assets/` | Logo, icon, favicon and the picture shown when the site is shared on social media |
+| `downloads/` | The 2026/27 Course Catalogue PDF, offered as a download on the courses section. To publish a new edition, replace this file and keep the same name, or update the link in `index.html`. |
 
 ---
 
@@ -159,5 +160,6 @@ If your main site is built with WordPress or the Hostinger Website Builder, chec
 - **No names of people** appear anywhere on the site, by design.
 - **Search engines:** the page includes Google-friendly course information (schema.org `Course`). You can check it at https://search.google.com/test/rich-results once the site is live.
 - **Speed:** the page, styles and script together are about 40 KB when compressed, plus fonts and logos, and shows the saved course list after 2.5 seconds if the sheet is slow. That keeps it fast on mobile data.
+- **Linking to a track:** add `#track-` and the track number to the address, for example `www.tsavone.com/training/#track-3`, to open the course list filtered to that track.
 - **Sharing a single course:** each course has its own link. Open a course and copy the address bar (it ends in, for example, `#course-T1.1`) to send someone straight to it.
 - **Changing contact details:** search `index.html` for the phone number or email address and edit it in each place it appears. Do the same in `thank-you.html`.
