@@ -47,7 +47,8 @@ const Utilities = strict('Utilities', {
     if (!Array.isArray(bytes) || bytes.some((x) => x < -128 || x > 127 || !Number.isInteger(x))) throw new Error('newBlob needs a byte array of -128..127');
     return makeBlob(bytes, type, name);
   },
-  base64Encode: (bytes) => Buffer.from(bytes.map((b) => b & 255)).toString('base64')
+  base64Encode: (bytes) => Buffer.from(bytes.map((b) => b & 255)).toString('base64'),
+  base64Decode: (str) => [...Buffer.from(str, 'base64')].map((b) => (b > 127 ? b - 256 : b))
 });
 
 /* ---------------- Spreadsheet ---------------- */
@@ -144,18 +145,17 @@ function makeFolder(name) {
     getFoldersByName: (n) => iter(fo._folders.filter((x) => x.getName() === n)),
     createFolder: (n) => { const c = makeFolder(n); fo._folders.push(c); return c; },
     getFiles: () => iter(fo._files.filter((x) => !x.isTrashed())),
+    getFilesByName: (n) => iter(fo._files.filter((x) => !x.isTrashed() && x.getName() === n)),
     createFile: (blob) => { const f = makeFile(blob.getName(), blob, P); fo._files.push(f); return f; }
   });
   const P = strict('Folder', fo);
   return P;
 }
 const rootFolder = makeFolder('My Drive');
-const logoPng = fs.readFileSync(path.join(__dirname, '..', 'tsavone-logo.png'));
-const logoFile = makeFile('logo.png', makeBlob([...logoPng].map((b) => (b > 127 ? b - 256 : b)), 'image/png', 'logo.png'));
 const docFiles = {};
 const DriveApp = strict('DriveApp', {
   getRootFolder: () => rootFolder,
-  getFileById: (id) => (id === 'LOGO' ? logoFile : docFiles[id] || (() => { throw new Error('file not found ' + id); })())
+  getFileById: (id) => docFiles[id] || files.find((f) => f.getId() === id) || (() => { throw new Error('file not found ' + id); })()
 });
 
 /* ---------------- Docs (records a layout tree) ---------------- */
@@ -286,7 +286,7 @@ const HtmlService = strict('HtmlService', {
 /* ---------------- Load the project ---------------- */
 const ctx = { Utilities, SpreadsheetApp, DriveApp, DocumentApp, GmailApp, PropertiesService, ScriptApp, HtmlService, console };
 vm.createContext(ctx);
-['Qr.gs', 'Code.gs'].forEach((f) => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), ctx, { filename: f }));
+['Code.gs'].forEach((f) => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), ctx, { filename: f }));
 
 // Give table objects getType (Docs Table element)
 const _mt = makeTable;
@@ -303,12 +303,19 @@ ok('headers written', reg.getRange(1, 1, 1, 19).getValues()[0].join(',') === ctx
 const settingsSheet = book.getSheetByName('Settings');
 ok('settings created', settingsSheet && settingsSheet.getLastRow() === 1 + ctx.DEFAULT_SETTINGS.length);
 ok('spreadsheet id stored', props.SPREADSHEET_ID === 'register-id');
-// set logo and verify_url as the owner would
 const sgrid = settingsSheet._grid;
-sgrid.forEach((r) => { if (r[0] === 'logo_drive_file_id') r[1] = 'LOGO'; if (r[0] === 'verify_url') r[1] = 'https://script.google.com/macros/s/AKfycbxEXAMPLE1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ/exec'; });
+const setting = (k) => sgrid.find((r) => r[0] === k)[1];
+const logoId = setting('logo_drive_file_id');
+const logoFile = files.find((f) => f.getId() === logoId);
+ok('setup saved the built-in logo to Drive', !!logoFile && logoFile.getName() === 'Tsavone logo for certificates.png' && rootFolder._files.includes(logoFile), logoId);
+ok('logo bytes are the PNG', logoFile && Buffer.from(logoFile.getBlob().getBytes().map((b) => b & 255)).equals(fs.readFileSync(path.join(__dirname, '..', 'tsavone-logo.png'))));
 run('setup twice keeps values', () => ctx.setup());
 ok('settings not duplicated', settingsSheet.getLastRow() === 1 + ctx.DEFAULT_SETTINGS.length);
-ok('settings kept', sgrid.find((r) => r[0] === 'logo_drive_file_id')[1] === 'LOGO');
+ok('logo not duplicated', setting('logo_drive_file_id') === logoId && rootFolder._files.filter((f) => f.getName() === 'Tsavone logo for certificates.png').length === 1);
+// Opening the published page once fills in verify_url
+ok('verify_url starts empty', setting('verify_url') === '');
+run('doGet first visit', () => ctx.doGet({ parameter: {} }));
+ok('verify_url filled automatically', /\/exec$/.test(setting('verify_url')), setting('verify_url'));
 
 /* ---------------- 2. sample rows from the test file ---------------- */
 const sample = fs.readFileSync(path.join(__dirname, '..', 'sample-rows.tsv'), 'utf8').replace(/\n+$/, '').split('\n').map((l) => l.split('\t'));

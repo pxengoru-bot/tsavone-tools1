@@ -19,28 +19,28 @@ Everything runs on your own Google account. No outside services are used.
 
 | File | What it is | Where it goes |
 |---|---|---|
-| `Code.gs` | The main program | Apps Script, file "Code" |
-| `Qr.gs` | Makes the QR codes | Apps Script, file "Qr" |
+| `Code.gs` | The whole program, including the QR code maker and the logo | Apps Script, file "Code" |
 | `Verify.html` | The verification web page | Apps Script, HTML file "Verify" |
-| `tsavone-logo.png` | Logo for certificates (PNG, because Google Docs cannot use SVG logos) | Upload to Google Drive (step 4) |
-| `sample-rows.tsv` | Three test participants | Paste into the sheet to try the tool (section 8) |
+| `tsavone-logo.png` | The certificate logo as a picture. You do not need to upload it: setup saves it to your Drive automatically. | Only if you want to see or replace it |
+| `sample-rows.tsv` | Three test participants | Paste into the sheet to try the tool (section 7) |
 | `tests/` | Automatic checks for developers | Not needed in Apps Script |
 
 To copy a file from GitHub: open it, click **Raw** (or the copy icon), select all (Ctrl+A), copy (Ctrl+C).
 
 ---
 
-## Step 1: Paste the code into Apps Script (10 minutes)
+**Setup has three steps and takes about 15 minutes:** paste two files, run setup, publish the verification page.
+
+## Step 1: Paste the code into Apps Script (5 minutes)
 
 1. Open your Google Sheet **Tsavone Training Register**.
 2. Click **Extensions → Apps Script**. A new tab opens with a file called `Code.gs`.
 3. Click the project name at the top ("Untitled project") and rename it **Tsavone Training Register**.
 4. **Code.gs:** delete everything in the editor. Paste the full contents of `Code.gs` from this folder.
-5. **Qr.gs:** click the **+** next to "Files" and choose **Script**. Name it `Qr` (Apps Script adds `.gs`). Delete what is in it, then paste the contents of `Qr.gs`.
-6. **Verify.html:** click **+** again and choose **HTML**. Name it exactly `Verify`. Delete what is in it, then paste the contents of `Verify.html`.
-7. Click the **Save** icon (or Ctrl+S).
+5. **Verify.html:** click the **+** next to "Files" and choose **HTML**. Name it exactly `Verify` (Apps Script adds `.html`). Delete what is in it, then paste the contents of `Verify.html`.
+6. Click the **Save** icon (or Ctrl+S).
 
-You should now have three files: `Code.gs`, `Qr.gs` and `Verify.html`.
+You should now have two files: `Code.gs` and `Verify.html`.
 
 ---
 
@@ -60,6 +60,7 @@ You should now have three files: `Code.gs`, `Qr.gs` and `Verify.html`.
 - Freezes and colours the header row (navy with white bold text).
 - Adds dropdowns for format, status and certificate type, and sets date formats.
 - Creates a **Settings** tab.
+- Saves the Tsavone logo to your Google Drive as "Tsavone logo for certificates.png" and puts its file ID into Settings.
 
 You can run it again at any time (Tsavone → Run setup again). It never deletes your data or overwrites your settings.
 
@@ -74,39 +75,7 @@ You can run it again at any time (Tsavone → Run setup again). It never deletes
 
 ---
 
-## Step 3: Check the Settings tab
-
-Open the **Settings** tab. Change only the **value** column (column B).
-
-| Setting | Starts as | Meaning |
-|---|---|---|
-| `pass_attendance_percent` | 80 | Minimum attendance (%) to pass |
-| `pass_post_test_score` | 60 | Minimum post-test score to pass |
-| `competence_post_test_score` | 75 | Post-test at or above this earns a **Certificate of Competence**; below it (but passing) earns a **Certificate of Completion** |
-| `certificate_folder_name` | Tsavone Certificates | Folder in your Google Drive (My Drive) where PDFs are saved, one sub-folder per course code |
-| `logo_drive_file_id` | (blank) | Fill in at step 4 |
-| `signatory_title` | Managing Director | Printed under the signature line. No personal name is printed. |
-| `sender_email_name` | Tsavone Consulting Training | Sender name on the certificate emails |
-| `verify_url` | (blank) | Fill in at step 5 |
-| `course_sheet_id` | 10V8_jXP… | Your public "Tsavone Courses" sheet, used to look up course titles and days |
-| `hours_per_day` | 7 | Course hours on certificates = days × this number |
-
----
-
-## Step 4: Upload the logo and copy its file ID
-
-1. Download `tsavone-logo.png` from this folder. You can use your own logo instead, but it must be **PNG or JPG, not SVG**.
-2. Upload it to Google Drive (New → File upload).
-3. In Drive, right-click the uploaded logo and choose **Share → Copy link**. The link looks like:
-   `https://drive.google.com/file/d/`**`1AbCdEfGhIjKlMnOpQrStUvWxYz`**`/view?usp=sharing`
-4. Copy only the long code between `/d/` and `/view`. That is the **file ID**.
-5. Paste it into **Settings → logo_drive_file_id**.
-
-You do not need to make the logo public. The script uses it as you.
-
----
-
-## Step 5: Publish the verification page and save its link
+## Step 3: Publish the verification page
 
 Every certificate has a QR code that opens this page, so do this **before** making real certificates.
 
@@ -117,9 +86,11 @@ Every certificate has a QR code that opens this page, so do this **before** maki
    - **Execute as:** **Me**
    - **Who has access:** **Anyone**
 4. Click **Deploy**. Approve permissions again if asked.
-5. Copy the **Web app URL**. It ends in `/exec`.
-6. Paste it into **Settings → verify_url**.
-7. Test it: open the link in a private browser window. You should see "Verify a Tsavone certificate" with a box. Type any ID and you should get **NOT FOUND**.
+5. Copy the **Web app URL** (it ends in `/exec`) and **open it once** in your browser. You should see "Verify a Tsavone certificate".
+6. **That first visit saves the link automatically** into **Settings → verify_url**. Check the Settings tab: verify_url should now show the same `/exec` link.
+   - If it is still empty, paste the link in yourself.
+   - If it shows a different link, paste the link in yourself as well.
+7. Type any ID on the page. You should get **NOT FOUND**.
 
 **Important: when you update the code later, keep the same link.**
 1. Use **Deploy → Manage deployments**.
@@ -139,9 +110,30 @@ Do **not** create a new deployment each time. That gives a new link, and QR code
 
 Email, phone, organisation, scores and notes are **never** shown.
 
+**Setup is now complete.** Try it with the three test participants in section 7 before your first real course.
+
 ---
 
-## Step 6: Using the register for a real course
+## Step 4: The Settings tab (change only if you need to)
+
+Open the **Settings** tab. Change only the **value** column (column B).
+
+| Setting | Starts as | Meaning |
+|---|---|---|
+| `pass_attendance_percent` | 80 | Minimum attendance (%) to pass |
+| `pass_post_test_score` | 60 | Minimum post-test score to pass |
+| `competence_post_test_score` | 75 | Post-test at or above this earns a **Certificate of Competence**; below it (but passing) earns a **Certificate of Completion** |
+| `certificate_folder_name` | Tsavone Certificates | Folder in your Google Drive (My Drive) where PDFs are saved, one sub-folder per course code |
+| `logo_drive_file_id` | filled by setup | The logo printed on certificates. To use another logo, upload a **PNG or JPG** (not SVG) to Drive, right-click it, choose **Share → Copy link**, and paste the code between `/d/` and `/view` here. |
+| `signatory_title` | Managing Director | Printed under the signature line. No personal name is printed. |
+| `sender_email_name` | Tsavone Consulting Training | Sender name on the certificate emails |
+| `verify_url` | filled on first visit | The verification page link used in QR codes (step 3) |
+| `course_sheet_id` | 10V8_jXP… | Your public "Tsavone Courses" sheet, used to look up course titles and days |
+| `hours_per_day` | 7 | Course hours on certificates = days × this number |
+
+---
+
+## Step 5: Using the register for a real course
 
 ### Before the course
 1. Add one row per participant on the **Register** tab. Fill in:
@@ -197,17 +189,17 @@ Email, phone, organisation, scores and notes are **never** shown.
 
 ---
 
-## Step 7: Changing the design
+## Step 6: Changing the design
 
 The colours and fonts are near the top of `Code.gs`:
 - `NAVY`, `ORANGE`, `LIGHT_BLUE`
 - `FONT_HEAD = 'Montserrat'`, `FONT_BODY = 'Source Sans 3'`
 
-If a font is not available in Google Docs, Docs uses a standard font instead. After any change, click Save. To update the verification page as well, follow the "keep the same link" steps in step 5.
+If a font is not available in Google Docs, Docs uses a standard font instead. After any change, click Save. To update the verification page as well, follow the "keep the same link" steps in step 3.
 
 ---
 
-## 8. Try it first with three test participants
+## 7. Try it first with three test participants
 
 1. Open `sample-rows.tsv` in this folder, click **Raw**, then select all and copy.
 2. In the **Register** tab, click cell **A2** (the first cell under `certificate_id`) and paste (Ctrl+V). Three rows appear.
@@ -236,7 +228,7 @@ Once the test rows are deleted, numbering starts again from `-0001` for real par
 
 ---
 
-## 9. Good to know
+## 8. Good to know
 
 - **Privacy:** the verification page shows the participant's name, course, dates and certificate type to anyone who has a certificate ID. IDs follow a pattern (`-0001`, `-0002` …), so someone could guess other IDs and see who completed a course. This is normal for public certificate checkers. If it ever matters for a sensitive course, keep those rows in **Draft** status; they then show NOT FOUND.
 - **Where data lives:** everything stays in your Google account (Sheet, Drive, Gmail). The QR codes are made inside the script, not by an outside website.
@@ -244,13 +236,13 @@ Once the test rows are deleted, numbering starts again from `-0001` for real par
 
 ---
 
-## 10. If something goes wrong
+## 9. If something goes wrong
 
 | Message or problem | What to do |
 |---|---|
 | No **Tsavone** menu | Reload the sheet. If it is still missing, run **setup** again from Apps Script (step 2). |
-| "Verification page not set up" | Finish step 5 and paste the `/exec` link into Settings → verify_url. |
-| Logo missing on certificates; the message mentions the logo | Check logo_drive_file_id (step 4). The file must be PNG or JPG. |
+| "Verification page not set up" | Finish step 3: publish the page and open its `/exec` link once, or paste the link into Settings → verify_url. |
+| Logo missing on certificates; the message mentions the logo | Clear Settings → logo_drive_file_id and choose **Tsavone → Run setup again**, which saves the logo again. A custom logo must be PNG or JPG. |
 | "These codes were not found in the course list" | Check the course code spelling (for example `T1.1`) against your "Tsavone Courses" sheet. |
 | "Missing attendance or post-test score on row(s) …" | Fill in those cells, then run Calculate results again. |
 | Certificate text or layout looks wrong | Send a screenshot of the PDF so the layout can be adjusted in `Code.gs`. |
@@ -265,7 +257,7 @@ The files in `tests/` run outside Google with Node.js:
 
 | Test | What it checks |
 |---|---|
-| `qr.test.js` | QR codes decode correctly (versions 1–13) and the PNG is valid. Needs the `jsqr` package. |
+| `qr.test.js` | The QR maker in `Code.gs` gives codes that decode correctly (versions 1–13), and the PNG is valid. Needs the `jsqr` package. |
 | `logic.test.js` | Results, IDs, dates, summaries, email text, and that the verification lookup reveals no private fields. |
 | `flow.test.js` | Every menu item end to end, against strict stand-ins that only accept real Apps Script method names |
 

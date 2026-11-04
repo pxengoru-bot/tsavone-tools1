@@ -1,4 +1,4 @@
-// Checks that Qr.gs makes QR codes that a real decoder (jsQR) reads back correctly,
+// Checks that the QR code part of Code.gs makes QR codes that a real decoder (jsQR) reads back correctly,
 // and that the PNG it builds is a valid image.
 // Run: NODE_PATH=<folder containing node_modules with jsqr> node register/tests/qr.test.js
 const fs = require('fs');
@@ -9,7 +9,7 @@ const jsQR = require('jsqr');
 
 const ctx = {};
 vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'Qr.gs'), 'utf8'), ctx);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8'), ctx);
 
 let pass = 0, fail = 0;
 function check(name, cond, extra) {
