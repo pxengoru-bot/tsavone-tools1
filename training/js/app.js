@@ -477,11 +477,18 @@
     byCode = {};
     courses.forEach(function (c) { byCode[c.code] = c; });
     state.tracks = buildTracks(courses);
+    // A link ending in #track-3 opens the list filtered to that track
+    var tm = location.hash.match(/^#track-(\d+)$/);
+    var jumpToTrack = false;
+    if (tm && !state.trackFromLink && state.tracks.some(function (t) { return String(t.no) === tm[1]; })) {
+      state.track = tm[1]; state.trackFromLink = true; jumpToTrack = true;
+    }
     if (state.track !== 'all' && !state.tracks.some(function (t) { return String(t.no) === String(state.track); })) state.track = 'all';
     $('#data-note').hidden = source === 'live';
     renderChips(); renderGrid(); renderStats(); fillSelects(); estimate(); updateSchema();
     var m = location.hash.match(/^#course-(.+)$/);
     if (m && !dialog.open && byCode[decodeURIComponent(m[1])]) openCourse(decodeURIComponent(m[1]));
+    if (jumpToTrack) $('#courses').scrollIntoView();
   }
 
   function showLoadError() {
@@ -588,6 +595,17 @@
       setTimeout(function () { $('#est-people').focus({ preventScroll: true }); }, 450);
     });
   }
+
+  // Respond to #track-N and #course-CODE links clicked while the page is open
+  window.addEventListener('hashchange', function () {
+    if (!state.courses.length) return;
+    var t = location.hash.match(/^#track-(\d+)$/);
+    if (t && state.tracks.some(function (x) { return String(x.no) === t[1]; })) {
+      state.track = t[1]; renderChips(); renderGrid(); $('#courses').scrollIntoView();
+    }
+    var c = location.hash.match(/^#course-(.+)$/);
+    if (c && !dialog.open && byCode[decodeURIComponent(c[1])]) openCourse(decodeURIComponent(c[1]));
+  });
 
   /* ============ START ============ */
   setupNav();

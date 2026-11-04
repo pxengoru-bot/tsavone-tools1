@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Verify a Tsavone certificate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+  :root { --navy:#193591; --navy-dark:#0c1a4f; --orange:#F17B19; --orange-dark:#B04E00; --sky:#EFFCFF; --text:#2c3557; --muted:#5a6385; --line:#dbe3f0; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Source Sans 3","Segoe UI",Arial,sans-serif; font-size:17px; line-height:1.55; color:var(--text);
+    background: linear-gradient(135deg,#0f2166 0%,#193591 60%,#2339b7 100%); min-height:100vh; padding:28px 16px; }
+  .card { max-width:620px; margin:0 auto; background:#fff; border-radius:22px; overflow:hidden; box-shadow:0 30px 70px rgba(5,12,50,.35); }
+  .bar { height:8px; background:linear-gradient(90deg,var(--orange),#ffd130); }
+  .inner { padding:30px clamp(20px,5vw,40px) 34px; }
+  .brand { display:flex; align-items:center; gap:12px; margin-bottom:22px; }
+  .brand img { height:52px; width:auto; }
+  .brand .word { font-family:Montserrat,Arial,sans-serif; font-weight:800; letter-spacing:.18em; color:var(--navy); font-size:18px; }
+  .brand .word small { display:block; letter-spacing:.32em; color:var(--orange-dark); font-size:10px; font-weight:700; }
+  h1 { font-family:Montserrat,Arial,sans-serif; color:var(--navy-dark); font-size:clamp(22px,4.5vw,28px); line-height:1.2; margin:0 0 8px; }
+  p.lead { color:var(--muted); margin:0 0 22px; }
+  form { display:flex; gap:10px; flex-wrap:wrap; }
+  label { position:absolute; left:-9999px; }
+  input { flex:1 1 240px; font:inherit; padding:13px 16px; border:2px solid var(--line); border-radius:12px; background:var(--sky); color:var(--navy-dark); text-transform:uppercase; }
+  input:focus { outline:none; border-color:var(--navy); background:#fff; }
+  button { font-family:Montserrat,Arial,sans-serif; font-weight:700; font-size:15px; padding:13px 22px; border:0; border-radius:999px; background:var(--orange); color:var(--navy-dark); cursor:pointer; }
+  button:focus-visible, input:focus-visible { outline:3px solid var(--orange); outline-offset:2px; }
+  .result { margin-top:26px; border-radius:16px; padding:20px 22px; border:2px solid; }
+  .badge { display:inline-block; font-family:Montserrat,Arial,sans-serif; font-weight:800; font-size:14px; letter-spacing:.12em; padding:6px 14px; border-radius:999px; color:#fff; margin-bottom:12px; }
+  .valid { border-color:#2B7A3A; background:#effaf1; } .valid .badge { background:#2B7A3A; }
+  .revoked { border-color:#9B2F5E; background:#fbeff4; } .revoked .badge { background:#9B2F5E; }
+  .notfound { border-color:var(--orange-dark); background:#fff5ec; } .notfound .badge { background:var(--orange-dark); }
+  dl { margin:0; display:grid; grid-template-columns:auto 1fr; gap:6px 16px; }
+  dt { font-size:13px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; padding-top:3px; }
+  dd { margin:0; font-weight:600; color:var(--navy-dark); }
+  dd.name { font-family:Montserrat,Arial,sans-serif; font-size:20px; }
+  @media (max-width:480px) { dl { grid-template-columns:1fr; } dt { padding-top:8px; } }
+  .result p { margin:0; }
+  .foot { margin-top:26px; padding-top:18px; border-top:1px solid var(--line); font-size:14px; color:var(--muted); }
+  .foot a { color:var(--navy); font-weight:600; }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="bar" aria-hidden="true"></div>
+  <div class="inner">
+    <div class="brand">
+      <? if (logo) { ?><img src="<?= logo ?>" alt="Tsavone Consulting"><? } else { ?>
+      <span class="word">TSAVONE<small>CONSULTING</small></span><? } ?>
+    </div>
+    <h1>Verify a Tsavone certificate</h1>
+    <p class="lead">Enter the certificate ID printed on the certificate, for example <span style="white-space:nowrap">TSV-2026-T1.1-0001</span>, or scan its QR code.</p>
+
+    <form method="get" action="<?= pageUrl ?>">
+      <label for="id">Certificate ID</label>
+      <input id="id" name="id" value="<?= query ?>" placeholder="TSV-2026-T1.1-0001" autocomplete="off" spellcheck="false" required maxlength="60">
+      <button type="submit">Verify</button>
+    </form>
+
+    <? if (result && result.state === 'VALID') { ?>
+    <section class="result valid" aria-live="polite">
+      <span class="badge">VALID</span>
+      <dl>
+        <dt>Participant</dt><dd class="name"><?= result.name ?></dd>
+        <dt>Course</dt><dd><?= result.course ?></dd>
+        <dt>Dates</dt><dd><?= result.dates || '–' ?></dd>
+        <dt>Certificate</dt><dd><?= result.type ?></dd>
+        <dt>Certificate ID</dt><dd><?= result.id ?></dd>
+      </dl>
+    </section>
+    <? } else if (result && result.state === 'REVOKED') { ?>
+    <section class="result revoked" aria-live="polite">
+      <span class="badge">REVOKED</span>
+      <p>Certificate <b><?= result.id ?></b> was issued by Tsavone Consulting but has been revoked and is no longer valid.</p>
+    </section>
+    <? } else if (result) { ?>
+    <section class="result notfound" aria-live="polite">
+      <span class="badge">NOT FOUND</span>
+      <p>We could not find a valid certificate with the ID <b><?= result.id ?></b>. Please check the ID and try again, or contact us.</p>
+    </section>
+    <? } ?>
+
+    <p class="foot">Questions about a certificate? Contact Tsavone Consulting at <a href="mailto:info@tsavone.com">info@tsavone.com</a> or +256 704 579 186 &middot; <a href="https://www.tsavone.com">www.tsavone.com</a></p>
+  </div>
+</main>
+</body>
+</html>
