@@ -124,30 +124,33 @@ After sending, visitors see `thank-you.html`.
 
 GitHub Pages is free for public repositories. For a private repository it needs a paid GitHub plan.
 
-To use your own address with GitHub Pages (for example training.tsavone.com), add a CNAME record in your domain's DNS. It should point `training` to `pxengoru-bot.github.io`. Then enter the address under Settings → Pages → Custom domain. For a simple setup, Hostinger (below) is usually easier.
+GitHub Pages is useful as a free preview. For the real site at tsavone.com/training, use Hostinger (below), because your main tsavone.com website is hosted there.
 
 ---
 
 ## 5. Uploading to Hostinger
 
-### Option A: as training.tsavone.com (recommended)
-1. Log in to Hostinger **hPanel → Websites → your tsavone.com website → Domains → Subdomains**.
-2. Create the subdomain `training`. Hostinger creates a folder for it, usually `public_html/training`. Note the folder name it shows.
-3. Open **Files → File Manager** and go into that folder.
-4. Upload **everything inside** the `training` folder from this repository: `index.html`, `thank-you.html`, `README.md` (optional), and the `css`, `js`, `data` and `assets` folders. `index.html` must sit directly in the subdomain's folder. Tip: zip the contents on your computer, upload the zip, then right-click → **Extract**.
-5. In hPanel, turn on the free SSL certificate for training.tsavone.com (**Security → SSL**).
-6. Visit https://training.tsavone.com and send a test enquiry (see section 3).
+The site is set up for **https://www.tsavone.com/training/**.
 
-### Option B: as tsavone.com/training
-1. Open **File Manager** for tsavone.com and go to `public_html`.
-2. Create a folder called `training`.
-3. Upload everything inside this repository's `training` folder into `public_html/training`.
-4. Visit https://www.tsavone.com/training/
+### Option A: as tsavone.com/training (set up and recommended)
+1. Log in to Hostinger **hPanel → Websites → tsavone.com → Files → File Manager**, and open `public_html`. This is the folder that already holds your main tsavone.com website.
+2. Create a new folder inside `public_html` called `training`, all lower case.
+3. Upload **everything inside** this repository's `training` folder into `public_html/training`: `index.html`, `thank-you.html`, `README.md` (optional), and the `css`, `js`, `data` and `assets` folders. `index.html` must sit directly inside `public_html/training`, not in a further subfolder. Tip: zip the contents on your computer, upload the zip, then right-click → **Extract**.
+4. Visit https://www.tsavone.com/training/ and send a test enquiry (see section 3).
+5. Optional: add a "Training" link to your main website's menu, pointing to `/training/`.
 
-Everything uses relative links, so both options work without any changes.
+Your existing website is not affected. The training site lives in its own folder and only uses its own files.
 
-### One small edit if you choose Option B or GitHub Pages
-The page tells search engines and social media that its home is **https://training.tsavone.com/**. If you publish somewhere else, open `index.html` and replace every `https://training.tsavone.com/` with your real address, for example `https://www.tsavone.com/training/`. Your editor's "Find and replace" does this in one step. The places it appears are `canonical`, `og:url`, `og:image`, `twitter:image` and the course list for Google. Everything else works either way.
+If your main site is built with WordPress or the Hostinger Website Builder, check first that no existing page already uses the address `/training`. If one does, rename that page's address, or the two will clash.
+
+### Option B: as training.tsavone.com
+1. In hPanel go to **Domains → Subdomains** and create the subdomain `training`. Note the folder Hostinger creates for it.
+2. Upload the contents of the `training` folder into that folder, as in Option A, step 3.
+3. Turn on the free SSL certificate for training.tsavone.com (**Security → SSL**).
+4. Open `index.html` and use "Find and replace" to change every `https://www.tsavone.com/training/` to `https://training.tsavone.com/`.
+
+### Why the web address matters
+`index.html` tells Google and social media the site's official address. It appears in the `canonical`, `og:url`, `og:image` and `twitter:image` lines and in the course list for Google. All other links are relative, so the site works in any folder. If you ever move it, find and replace that address as in Option B, step 4.
 
 ---
 
