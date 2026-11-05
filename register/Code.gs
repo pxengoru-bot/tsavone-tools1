@@ -234,14 +234,19 @@ function readSettings_(ss) {
   return s;
 }
 
-/** Rows the person has selected on the Register tab (data rows only). */
-function selectedRowNumbers_(reg) {
+/**
+ * Rows the person has selected on the Register tab (data rows only).
+ * wholeRowsOnly: count only rows selected by clicking the grey row numbers, not a single highlighted cell.
+ */
+function selectedRowNumbers_(reg, wholeRowsOnly) {
   var active = reg.ss.getActiveSheet();
   if (active.getName() !== REGISTER_SHEET) return [];
   var list = active.getActiveRangeList();
   if (!list) return [];
+  var maxCols = active.getMaxColumns();
   var seen = {};
   list.getRanges().forEach(function (r) {
+    if (wholeRowsOnly && r.getNumColumns() < maxCols) return;
     for (var i = r.getRow(); i < r.getRow() + r.getNumRows(); i++) if (i >= 2) seen[i] = true;
   });
   return Object.keys(seen).map(Number).sort(function (a, b) { return a - b; });
@@ -453,16 +458,23 @@ function menuGenerateCertificates() {
   }
 
   var rows = readRows_(reg);
-  var selected = selectedRowNumbers_(reg).filter(function (n) { return rows.some(function (r) { return r.rowNumber === n; }); });
-  var targets;
+  // Whole rows chosen by clicking the grey row numbers = remake those; otherwise make all waiting certificates
+  var selected = selectedRowNumbers_(reg, true).filter(function (n) { return rows.some(function (r) { return r.rowNumber === n; }); });
+  var waiting = rows.filter(function (r) {
+    return isBlank_(r.issued_date) && String(r.result).trim() === RESULT_PASS && String(r.status).trim() !== 'Revoked';
+  }).length;
+  var targets = null;
   if (selected.length) {
     var choice = ui.alert('Generate certificates',
-      'You have ' + selected.length + ' row(s) selected.\n\nYES = make certificates for the selected rows only (existing certificates for these rows are replaced).\nNO = make certificates for ALL passing participants who have no issued date yet.',
+      'You selected ' + selected.length + ' whole row(s).\n\nYES = make (or remake) certificates for just these row(s).\nNO = ignore the selection and make the ' + waiting + ' certificate(s) still waiting.',
       ui.ButtonSet.YES_NO_CANCEL);
     if (choice === ui.Button.CANCEL || choice === ui.Button.CLOSE) return;
-    targets = choice === ui.Button.YES ? selected : null;
-  } else {
-    targets = null;
+    if (choice === ui.Button.YES) targets = selected;
+  } else if (waiting) {
+    var go = ui.alert('Generate certificates',
+      'Make certificates for the ' + waiting + ' passing participant(s) who do not have one yet?\n\n(To remake certificates for particular people instead, first click their grey row numbers on the left.)',
+      ui.ButtonSet.OK_CANCEL);
+    if (go !== ui.Button.OK) return;
   }
 
   var list = rows.filter(function (r) {
@@ -953,6 +965,7 @@ function writeSummarySheet_(ss, run, s, tz) {
       .forEach(function (k) { out.push([k, b[1][k]]); });
   });
 
+  sh.getRange(1, 2, out.length, 1).setNumberFormat('@'); // show values exactly as written (e.g. 83.3%)
   sh.getRange(1, 1, out.length, 2).setValues(out);
   sh.setColumnWidth(1, 360); sh.setColumnWidth(2, 160);
   sh.getRange(1, 1).setFontSize(11).setFontColor(ORANGE_DARK).setFontWeight('bold');
