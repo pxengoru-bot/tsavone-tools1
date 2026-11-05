@@ -161,13 +161,11 @@ Open the **Settings** tab. Change only the **value** column (column B).
 
 ### Certificates
 6. **Tsavone → Generate certificates.**
-   - You are asked what to do:
-     - **NO** = make certificates for **all** passing participants who do not yet have an issued_date. This is the usual choice after a course.
-     - **YES** = make or **remake** certificates for just the rows you selected (click the grey row numbers on the left; Ctrl-click for several). Any older PDF for those rows is replaced.
-   - If you start from another tab (for example Settings), there is no question and all pending certificates are made.
+   - Normally: it asks "Make certificates for the N passing participant(s) who do not have one yet?" Click **OK**.
+   - To **remake** certificates for particular people (for example after correcting a name), first click their **grey row numbers** on the left (Ctrl-click for several). Then choose Generate certificates and answer **YES** to "make (or remake) certificates for just these row(s)". Any older PDF for those rows is replaced.
    - Each PDF is saved in **Google Drive → Tsavone Certificates → [course code]**, named like `TSV-2027-T1.1-0001 - Amina Nakato.pdf`.
    - The row's issued_date is set to today (an existing issue date is kept when you remake a certificate), and its status becomes **Issued**.
-   - Google stops a run after 6 minutes, which is usually enough for several dozen certificates. If you see "I stopped early", just run it again (choose NO) and it carries on.
+   - Google stops a run after 6 minutes, which is usually enough for several dozen certificates. If you see "I stopped early", just run it again and it carries on.
    - **Open the first PDF and check it** before emailing anyone.
 7. **Tsavone → Email certificates (create Gmail drafts).**
    - First select the rows to email, then choose the menu item.
@@ -209,7 +207,7 @@ If a font is not available in Google Docs, Docs uses a standard font instead. Af
 | Fill course titles from codes | All three rows show "Practical Monitoring, Evaluation and Learning for Programmes" |
 | Calculate results | One: **Pass / Competence**. Two: **Pass / Completion**. Three: **Did not complete** (attendance 60%). Notes show the improvement, for example "+37 points" for One. |
 | Create certificate IDs | One: `TSV-2027-T1.1-0001`. Two: `TSV-2027-T1.1-0002`. Three: no ID. |
-| Generate certificates, and choose **NO** when asked | 2 PDFs in Drive → Tsavone Certificates → T1.1; both rows become **Issued** |
+| Generate certificates, and click **OK** | 2 PDFs in Drive → Tsavone Certificates → T1.1; both rows become **Issued** |
 | Scan a certificate's QR code with your phone | The verification page shows **VALID** for that participant |
 | Select the three test rows, then Email certificates | 2 Gmail drafts; the third row is skipped because that person did not pass |
 | Course summary → choose T1.1, 10 Mar 2027 | Participants 3, pass rate 67%, average improvement +23.3 |

@@ -62,7 +62,7 @@ function makeSheet(name, grid) {
       getValues: () => { const out = []; for (let i = 0; i < nr; i++) { const row = []; for (let j = 0; j < nc; j++) { const v = (s._grid[r - 1 + i] || [])[c - 1 + j]; row.push(v === undefined ? '' : v); } out.push(row); } return out; },
       setValues: (vals) => { if (vals.length !== nr || vals.some((row) => row.length !== nc)) throw new Error(`setValues size mismatch ${vals.length}x${vals[0] && vals[0].length} vs ${nr}x${nc}`); vals.forEach((row, i) => row.forEach((v, j) => { cell(r + i, c + j)[c - 1 + j] = v; })); return P; },
       setValue: (v) => { cell(r, c)[c - 1] = v; return P; },
-      getRow: () => r, getNumRows: () => nr
+      getRow: () => r, getNumRows: () => nr, getNumColumns: () => nc
     };
     ['setBackground', 'setFontColor', 'setFontWeight', 'setVerticalAlignment', 'setWrap', 'setDataValidation', 'setNumberFormat', 'setFontSize', 'setBorder', 'setHorizontalAlignment', 'merge']
       .forEach((m) => { R[m] = () => P; });
@@ -71,11 +71,11 @@ function makeSheet(name, grid) {
   }
   Object.assign(s, {
     getName: () => s._name, setName: (n) => { s._name = n; return P; },
-    getLastRow: lastRow, getLastColumn: width, getMaxRows: () => 1000,
+    getLastRow: lastRow, getLastColumn: width, getMaxRows: () => 1000, getMaxColumns: () => 26,
     getRange: range, getDataRange: () => range(1, 1, Math.max(lastRow(), 1), Math.max(width(), 1)),
     setFrozenRows: () => P, setRowHeight: () => P, setRowHeights: () => P, setColumnWidth: () => P,
     deleteRow: (n) => { s._grid.splice(n - 1, 1); return P; },
-    getActiveRangeList: () => (s._active ? strict('RangeList', { getRanges: () => s._active.map(([a, b]) => range(a, 1, b - a + 1, 1)) }) : null)
+    getActiveRangeList: () => (s._active ? strict('RangeList', { getRanges: () => s._active.map(([a, b, cols]) => range(a, 1, b - a + 1, cols || 26)) }) : null)
   });
   const P = strict('Sheet', s);
   return P;
@@ -88,7 +88,8 @@ function makeSpreadsheet(id, sheets) {
     getSheetByName: (n) => ss._sheets.find((x) => x.getName() === n) || null,
     insertSheet: (n) => { const sh = makeSheet(n); ss._sheets.push(sh); return sh; },
     deleteSheet: (sh) => { ss._sheets = ss._sheets.filter((x) => x !== sh); },
-    getSpreadsheetTimeZone: () => TZ,
+    getSpreadsheetTimeZone: () => ss._tz || 'America/New_York',
+    setSpreadsheetTimeZone: (tz) => { ss._tz = tz; },
     getActiveSheet: () => ss._active,
     setActiveSheet: (sh) => { ss._active = sh; return sh; },
     toast: (m) => { ss._toasts.push(m); }
@@ -110,7 +111,7 @@ const alerts = [], prompts = [];
 let promptAnswer = '1', alertAnswer = 'YES';
 const Ui = strict('Ui', {
   createMenu: (t) => chain('Menu', ['addItem', 'addSeparator', 'addSubMenu', 'addToUi']),
-  alert: (...a) => { alerts.push(a.length === 1 ? a[0] : a[0] + ': ' + a[1]); return alertAnswer; },
+  alert: (...a) => { alerts.push(a.length === 1 ? a[0] : a[0] + ': ' + a[1]); return a[2] === 'OK_CANCEL' ? 'OK' : a[2] === 'OK' ? 'OK' : alertAnswer; },
   prompt: (...a) => { prompts.push(a[1]); return strict('PromptResponse', { getSelectedButton: () => 'OK', getResponseText: () => promptAnswer }); },
   ButtonSet: { OK: 'OK', OK_CANCEL: 'OK_CANCEL', YES_NO: 'YES_NO', YES_NO_CANCEL: 'YES_NO_CANCEL' },
   Button: { OK: 'OK', CANCEL: 'CANCEL', CLOSE: 'CLOSE', YES: 'YES', NO: 'NO' }
@@ -314,6 +315,7 @@ ok('headers written', reg.getRange(1, 1, 1, 19).getValues()[0].join(',') === ctx
 const settingsSheet = book.getSheetByName('Settings');
 ok('settings created', settingsSheet && settingsSheet.getLastRow() === 1 + ctx.DEFAULT_SETTINGS.length);
 ok('spreadsheet id stored', props.SPREADSHEET_ID === 'register-id');
+ok('time zone set to Kampala', book.getSpreadsheetTimeZone() === 'Africa/Kampala');
 const sgrid = settingsSheet._grid;
 const setting = (k) => sgrid.find((r) => r[0] === k)[1];
 const logoId = setting('logo_drive_file_id');
@@ -344,7 +346,9 @@ false && sample.forEach((r, i) => {
 run('add test participants', () => ctx.menuAddTestParticipants());
 ok('3 test rows added at row 2', reg.getRange(2, 2, 3, 1).getValues().map((r) => r[0]).join('|') === 'Test Participant One|Test Participant Two|Test Participant Three', reg._grid.slice(1, 4));
 ok('test emails use own address', reg.getRange(2, 4).getValues()[0][0] === 'px.engoru+test1@gmail.com', reg.getRange(2, 4).getValues());
-ok('test dates are dates', Object.prototype.toString.call(reg.getRange(2, 8).getValues()[0][0]) === '[object Date]');
+ok('test dates written as ISO text for the sheet to parse', reg.getRange(2, 8).getValues()[0][0] === '2027-03-10');
+// Sheets turns ISO text into dates; do the same here
+for (let r = 1; r <= 3; r++) for (const c of [7, 8]) reg._grid[r][c] = new Date(reg._grid[r][c] + 'T00:00:00+03:00');
 run('add test participants twice', () => ctx.menuAddTestParticipants());
 ok('no duplicate test rows', reg.getLastRow() === 4, reg.getLastRow());
 run('onOpen', () => ctx.onOpen());
@@ -359,8 +363,9 @@ const ids = reg.getRange(2, 1, 3, 1).getValues().map((r) => r[0]);
 ok('ids created for passing rows only', JSON.stringify(ids) === JSON.stringify(['TSV-2027-T1.1-0001', 'TSV-2027-T1.1-0002', '']), ids);
 
 // Generate: no selection -> all passing rows without issued date
-reg._active = null; book.setActiveSheet(reg);
+reg._active = [[2, 2, 1]]; book.setActiveSheet(reg); alertAnswer = 'YES';
 run('generate', () => ctx.menuGenerateCertificates());
+ok('single cell selection does not limit generation', /Make certificates for the 2 passing/.test(alerts[alerts.length - 2]), alerts.slice(-2));
 ok('generate message', /2 certificate\(s\) saved/.test(alerts[alerts.length - 1]) && !/Skipped/.test(alerts[alerts.length - 1]), alerts[alerts.length - 1]);
 const certRoot = rootFolder._folders.find((f) => f.getName() === 'Tsavone Certificates');
 const courseFolder = certRoot && certRoot._folders.find((f) => f.getName() === 'T1.1');
