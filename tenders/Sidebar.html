@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #2c3557; margin: 0; padding: 14px; }
+  h2 { font-size: 16px; color: #193591; margin: 0 0 4px; }
+  p.hint { color: #5a6385; margin: 0 0 12px; font-size: 12px; }
+  label { display: block; font-weight: bold; margin: 10px 0 4px; color: #15204a; }
+  label .opt { font-weight: normal; color: #5a6385; }
+  input, select, textarea { width: 100%; font: inherit; padding: 7px 8px; border: 1px solid #c7d2e6; border-radius: 6px; background: #fff; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid #F17B19; outline-offset: 0; border-color: #193591; }
+  textarea { min-height: 84px; resize: vertical; }
+  .row { display: flex; gap: 8px; }
+  .row > div { flex: 1; min-width: 0; }
+  button { margin-top: 16px; width: 100%; padding: 10px; font: inherit; font-weight: bold; color: #0c1a4f; background: #F17B19; border: 0; border-radius: 999px; cursor: pointer; }
+  button[disabled] { background: #c9cfdc; cursor: wait; }
+  .msg { margin-top: 12px; padding: 10px; border-radius: 6px; display: none; }
+  .msg.ok { display: block; background: #e6f4ea; color: #1e5631; }
+  .msg.err { display: block; background: #fde2df; color: #8a1f12; }
+</style>
+</head>
+<body>
+  <h2>Add new tender</h2>
+  <p class="hint">Fields marked * are required. The reference number (TND-…) is created for you.</p>
+  <form id="f" autocomplete="off">
+    <label for="organisation">Organisation *</label>
+    <input id="organisation" name="organisation" required>
+
+    <label for="title">Title *</label>
+    <input id="title" name="title" required>
+
+    <div class="row">
+      <div>
+        <label for="notice_type">Notice type</label>
+        <select id="notice_type" name="notice_type"><option value=""></option><? lists.notice_type.forEach(function (x) { ?><option><?= x ?></option><? }); ?></select>
+      </div>
+      <div>
+        <label for="category">Category</label>
+        <select id="category" name="category"><option value=""></option><? lists.category.forEach(function (x) { ?><option><?= x ?></option><? }); ?></select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="deadline">Deadline</label>
+        <input id="deadline" name="deadline" type="date">
+      </div>
+      <div>
+        <label for="date_found">Date found</label>
+        <input id="date_found" name="date_found" type="date" value="<?= today ?>">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="submission_method">Submission</label>
+        <select id="submission_method" name="submission_method"><option value=""></option><? lists.submission_method.forEach(function (x) { ?><option><?= x ?></option><? }); ?></select>
+      </div>
+      <div>
+        <label for="status">Status</label>
+        <select id="status" name="status"><? lists.status.forEach(function (x) { ?><option<?= x === 'Watching' ? ' selected' : '' ?>><?= x ?></option><? }); ?></select>
+      </div>
+    </div>
+
+    <label for="source_link">Source link <span class="opt">(notice web page)</span></label>
+    <input id="source_link" name="source_link" type="url" placeholder="https://">
+
+    <div class="row">
+      <div>
+        <label for="lead_person">Lead person</label>
+        <input id="lead_person" name="lead_person">
+      </div>
+      <div>
+        <label for="go_no_go">Go / no go</label>
+        <select id="go_no_go" name="go_no_go"><? lists.go_no_go.forEach(function (x) { ?><option<?= x === 'Undecided' ? ' selected' : '' ?>><?= x ?></option><? }); ?></select>
+      </div>
+    </div>
+
+    <label for="bid_value_ugx">Bid value <span class="opt">(UGX, numbers only)</span></label>
+    <input id="bid_value_ugx" name="bid_value_ugx" inputmode="numeric" placeholder="e.g. 45000000">
+
+    <label for="documents_required">Documents required <span class="opt">(one per line, or separated by commas)</span></label>
+    <textarea id="documents_required" name="documents_required" placeholder="Certificate of incorporation&#10;Tax clearance certificate&#10;CVs of key experts"></textarea>
+
+    <label for="notes">Notes</label>
+    <textarea id="notes" name="notes" style="min-height:56px"></textarea>
+
+    <button id="save" type="submit">Add tender</button>
+    <div id="msg" class="msg" role="status" aria-live="polite"></div>
+  </form>
+
+<script>
+  var form = document.getElementById('f');
+  var btn = document.getElementById('save');
+  var msg = document.getElementById('msg');
+  function show(text, ok) { msg.textContent = text; msg.className = 'msg ' + (ok ? 'ok' : 'err'); }
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!form.organisation.value.trim() || !form.title.value.trim()) { show('Please fill in the organisation and the title.', false); return; }
+    var data = {};
+    Array.prototype.forEach.call(form.elements, function (el) { if (el.name) data[el.name] = el.value; });
+    btn.disabled = true; btn.textContent = 'Saving…';
+    google.script.run
+      .withSuccessHandler(function (id) {
+        show('Added as ' + id + '. You can add another, or close this panel.', true);
+        var keep = form.date_found.value;
+        form.reset();
+        form.date_found.value = keep;
+        btn.disabled = false; btn.textContent = 'Add tender';
+        form.organisation.focus();
+      })
+      .withFailureHandler(function (err) {
+        show(err && err.message ? err.message : String(err), false);
+        btn.disabled = false; btn.textContent = 'Add tender';
+      })
+      .addTender(data);
+  });
+</script>
+</body>
+</html>
