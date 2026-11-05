@@ -88,7 +88,8 @@ function makeSpreadsheet(id, sheets) {
     getSheetByName: (n) => ss._sheets.find((x) => x.getName() === n) || null,
     insertSheet: (n) => { const sh = makeSheet(n); ss._sheets.push(sh); return sh; },
     deleteSheet: (sh) => { ss._sheets = ss._sheets.filter((x) => x !== sh); },
-    getSpreadsheetTimeZone: () => TZ,
+    getSpreadsheetTimeZone: () => ss._tz || 'America/New_York',
+    setSpreadsheetTimeZone: (tz) => { ss._tz = tz; },
     getActiveSheet: () => ss._active,
     setActiveSheet: (sh) => { ss._active = sh; return sh; },
     toast: (m) => { ss._toasts.push(m); }
@@ -314,6 +315,7 @@ ok('headers written', reg.getRange(1, 1, 1, 19).getValues()[0].join(',') === ctx
 const settingsSheet = book.getSheetByName('Settings');
 ok('settings created', settingsSheet && settingsSheet.getLastRow() === 1 + ctx.DEFAULT_SETTINGS.length);
 ok('spreadsheet id stored', props.SPREADSHEET_ID === 'register-id');
+ok('time zone set to Kampala', book.getSpreadsheetTimeZone() === 'Africa/Kampala');
 const sgrid = settingsSheet._grid;
 const setting = (k) => sgrid.find((r) => r[0] === k)[1];
 const logoId = setting('logo_drive_file_id');

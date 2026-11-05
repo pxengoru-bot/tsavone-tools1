@@ -128,6 +128,8 @@ function setup() {
   st.getRange(2, 2, Math.max(st.getLastRow() - 1, 1), 1).setNumberFormat('@');
 
   PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', ss.getId());
+  // Tsavone works in Uganda: dates and issue dates follow Kampala time
+  if (ss.getSpreadsheetTimeZone() !== 'Africa/Kampala') ss.setSpreadsheetTimeZone('Africa/Kampala');
   var logoNote = ensureLogo_(ss);
   onOpen();
   ss.setActiveSheet(sh);
