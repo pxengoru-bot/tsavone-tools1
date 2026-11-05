@@ -73,7 +73,8 @@ function makeSheet(name, grid) {
     getName: () => s._name, setName: (n) => { s._name = n; return P; },
     getLastRow: lastRow, getLastColumn: width, getMaxRows: () => 1000,
     getRange: range, getDataRange: () => range(1, 1, Math.max(lastRow(), 1), Math.max(width(), 1)),
-    setFrozenRows: () => P, setRowHeight: () => P, setColumnWidth: () => P,
+    setFrozenRows: () => P, setRowHeight: () => P, setRowHeights: () => P, setColumnWidth: () => P,
+    deleteRow: (n) => { s._grid.splice(n - 1, 1); return P; },
     getActiveRangeList: () => (s._active ? strict('RangeList', { getRanges: () => s._active.map(([a, b]) => range(a, 1, b - a + 1, 1)) }) : null)
   });
   const P = strict('Sheet', s);
@@ -108,10 +109,10 @@ courseBook.getSheets()[0]._grid = courseBook.getSheets()[0]._grid.map((r) => [r[
 const alerts = [], prompts = [];
 let promptAnswer = '1', alertAnswer = 'YES';
 const Ui = strict('Ui', {
-  createMenu: (t) => chain('Menu', ['addItem', 'addSeparator', 'addToUi']),
+  createMenu: (t) => chain('Menu', ['addItem', 'addSeparator', 'addSubMenu', 'addToUi']),
   alert: (...a) => { alerts.push(a.length === 1 ? a[0] : a[0] + ': ' + a[1]); return alertAnswer; },
   prompt: (...a) => { prompts.push(a[1]); return strict('PromptResponse', { getSelectedButton: () => 'OK', getResponseText: () => promptAnswer }); },
-  ButtonSet: { OK: 'OK', OK_CANCEL: 'OK_CANCEL', YES_NO_CANCEL: 'YES_NO_CANCEL' },
+  ButtonSet: { OK: 'OK', OK_CANCEL: 'OK_CANCEL', YES_NO: 'YES_NO', YES_NO_CANCEL: 'YES_NO_CANCEL' },
   Button: { OK: 'OK', CANCEL: 'CANCEL', CLOSE: 'CLOSE', YES: 'YES', NO: 'NO' }
 });
 const validationBuilder = () => chain('DataValidationBuilder', ['requireValueInList', 'setAllowInvalid', 'build']);
@@ -269,7 +270,17 @@ const origMakeTable = makeTable;
 
 /* ---------------- Gmail, Properties, Script, Html ---------------- */
 const drafts = [];
-const GmailApp = strict('GmailApp', { createDraft: (to, subject, body, opts) => { drafts.push({ to, subject, body, opts }); return {}; } });
+const GmailApp = strict('GmailApp', {
+  createDraft: (to, subject, body, opts) => { drafts.push({ to, subject, body, opts, deleted: false }); return {}; },
+  getDrafts: () => drafts.filter((d) => !d.deleted).map((d) => strict('GmailDraft', {
+    getMessage: () => strict('GmailMessage', { getTo: () => d.to, getSubject: () => d.subject }),
+    deleteDraft: () => { d.deleted = true; }
+  }))
+});
+const Session = strict('Session', {
+  getActiveUser: () => strict('User', { getEmail: () => 'px.engoru@gmail.com' }),
+  getEffectiveUser: () => strict('User', { getEmail: () => 'px.engoru@gmail.com' })
+});
 const props = {};
 const PropertiesService = strict('PropertiesService', { getScriptProperties: () => strict('Properties', { setProperty: (k, v) => { props[k] = v; }, getProperty: (k) => props[k] || null }) });
 const ScriptApp = strict('ScriptApp', { getService: () => strict('Service', { getUrl: () => 'https://script.google.com/macros/s/AKfycbxEXAMPLE1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ/exec' }) });
@@ -284,7 +295,7 @@ const HtmlService = strict('HtmlService', {
 });
 
 /* ---------------- Load the project ---------------- */
-const ctx = { Utilities, SpreadsheetApp, DriveApp, DocumentApp, GmailApp, PropertiesService, ScriptApp, HtmlService, console };
+const ctx = { Utilities, SpreadsheetApp, DriveApp, DocumentApp, GmailApp, PropertiesService, ScriptApp, HtmlService, Session, console };
 vm.createContext(ctx);
 ['Code.gs'].forEach((f) => vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), ctx, { filename: f }));
 
@@ -320,7 +331,7 @@ ok('verify_url filled automatically', /\/exec$/.test(setting('verify_url')), set
 /* ---------------- 2. sample rows from the test file ---------------- */
 const sample = fs.readFileSync(path.join(__dirname, '..', 'sample-rows.tsv'), 'utf8').replace(/\n+$/, '').split('\n').map((l) => l.split('\t'));
 ok('sample has 3 rows of 19 columns', sample.length === 3 && sample.every((r) => r.length === 19), sample.map((r) => r.length));
-sample.forEach((r, i) => {
+false && sample.forEach((r, i) => {
   const row = r.map((v, j) => {
     if (['start_date', 'end_date', 'issued_date'].includes(ctx.COLUMNS[j]) && v) return new Date(v + 'T00:00:00+03:00');
     if (['attendance_percent', 'pre_test_score', 'post_test_score'].includes(ctx.COLUMNS[j]) && v) return Number(v);
@@ -330,6 +341,12 @@ sample.forEach((r, i) => {
 });
 
 /* ---------------- 3. menu items ---------------- */
+run('add test participants', () => ctx.menuAddTestParticipants());
+ok('3 test rows added at row 2', reg.getRange(2, 2, 3, 1).getValues().map((r) => r[0]).join('|') === 'Test Participant One|Test Participant Two|Test Participant Three', reg._grid.slice(1, 4));
+ok('test emails use own address', reg.getRange(2, 4).getValues()[0][0] === 'px.engoru+test1@gmail.com', reg.getRange(2, 4).getValues());
+ok('test dates are dates', Object.prototype.toString.call(reg.getRange(2, 8).getValues()[0][0]) === '[object Date]');
+run('add test participants twice', () => ctx.menuAddTestParticipants());
+ok('no duplicate test rows', reg.getLastRow() === 4, reg.getLastRow());
 run('onOpen', () => ctx.onOpen());
 run('fill titles', () => ctx.menuFillCourseTitles());
 ok('titles filled', reg.getRange(2, 7, 3, 1).getValues().every((r) => r[0] === 'Practical Monitoring, Evaluation and Learning for Programmes'), alerts[alerts.length - 1]);
@@ -390,6 +407,16 @@ ok('no id -> no result', lastTemplate.result === null);
 reg._grid[1][17] = 'Revoked';
 run('doGet revoked', () => ctx.doGet({ parameter: { id: 'TSV-2027-T1.1-0001' } }));
 ok('revoked', lastTemplate.result.state === 'REVOKED');
+
+/* ---------------- Remove test participants ---------------- */
+reg._grid[1][17] = 'Issued';
+alertAnswer = 'YES';
+run('remove test participants', () => ctx.menuRemoveTestParticipants());
+ok('test rows removed', reg.getLastRow() === 1, reg.getLastRow());
+ok('test pdfs trashed', courseFolder._files.every((f) => f.isTrashed()), courseFolder._files.map((f) => [f.getName(), f.isTrashed()]));
+ok('test drafts deleted', drafts.every((d) => d.deleted));
+ok('test summary tab deleted', !book.getSheets().some((s) => s.getName().startsWith('Summary T1.1')));
+ok('remove message', /Removed 3 test row\(s\), 2 certificate PDF\(s\).*2 Gmail draft\(s\) and 1 summary tab/.test(alerts[alerts.length - 1]), alerts[alerts.length - 1]);
 
 /* ---------------- 4. Certificate layout preview ---------------- */
 const cert = docs[0].body;

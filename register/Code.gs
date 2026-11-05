@@ -64,6 +64,9 @@ function onOpen() {
     .addSeparator()
     .addItem('Course summary', 'menuCourseSummary')
     .addSeparator()
+    .addSubMenu(SpreadsheetApp.getUi().createMenu('Testing')
+      .addItem('Add test participants', 'menuAddTestParticipants')
+      .addItem('Remove test participants', 'menuRemoveTestParticipants'))
     .addItem('Run setup again', 'setup')
     .addToUi();
 }
@@ -963,6 +966,104 @@ function writeSummarySheet_(ss, run, s, tz) {
   sh.getRange(sentRow, 1, 1, 2).merge().setWrap(true).setBackground(LIGHT_BLUE);
   sh.setRowHeight(sentRow, 60);
   ss.setActiveSheet(sh);
+}
+
+/* ============================== MENU: TESTING ============================== */
+
+var TEST_NOTE = 'TEST ROW - delete after testing';
+
+/** Email address for test rows: your own address with +test1, +test2 ... (arrives in your inbox). */
+function testEmail_(n) {
+  var me = '';
+  try { me = Session.getActiveUser().getEmail() || Session.getEffectiveUser().getEmail() || ''; } catch (e) { me = ''; }
+  var at = me.indexOf('@');
+  return at > 0 ? me.slice(0, at) + '+test' + n + me.slice(at) : 'test' + n + '@example.com';
+}
+
+/** Adds three test participants (two pass, one does not) so every menu item can be tried. */
+function menuAddTestParticipants() {
+  var reg = registerSheet_();
+  var rows = readRows_(reg);
+  if (rows.some(function (r) { return String(r.notes || '').indexOf(TEST_NOTE) === 0; })) {
+    ui_().alert('Add test participants', 'Test participants are already in the Register. Use Tsavone > Testing > Remove test participants first if you want to start again.', ui_().ButtonSet.OK);
+    return;
+  }
+  var start = new Date(2027, 2, 10), end = new Date(2027, 2, 14);
+  var people = [
+    ['Test Participant One', 'Sample Organisation A', 100, 45, 82],
+    ['Test Participant Two', 'Sample Organisation B', 90, 50, 68],
+    ['Test Participant Three', 'Sample Organisation B', 60, 40, 55]
+  ];
+  var width = reg.sh.getLastColumn();
+  var values = people.map(function (p, i) {
+    var row = new Array(width).fill('');
+    var set = function (col, v) { row[reg.cols[col]] = v; };
+    set('participant_name', p[0]); set('organisation', p[1]); set('email', testEmail_(i + 1));
+    set('phone', '+25670000000' + (i + 1)); set('course_code', 'T1.1');
+    set('start_date', start); set('end_date', end); set('location', 'Kampala, Uganda'); set('format', 'Open enrolment');
+    set('attendance_percent', p[2]); set('pre_test_score', p[3]); set('post_test_score', p[4]);
+    set('status', 'Draft'); set('notes', TEST_NOTE);
+    return row;
+  });
+  var first = Math.max(reg.sh.getLastRow(), 1) + 1;
+  reg.sh.getRange(first, 1, values.length, width).setValues(values);
+  reg.sh.setRowHeights(first, values.length, 21);
+  reg.sh.getRange(first, 1, values.length, width).setWrap(false);
+  ui_().alert('Add test participants',
+    '3 test participants added (rows ' + first + '–' + (first + 2) + '). Their emails go to your own inbox.\n\nNow run, in order:\n1. Fill course titles from codes\n2. Calculate results\n3. Create certificate IDs\n4. Generate certificates (choose NO)\n\nWhen finished, use Tsavone > Testing > Remove test participants.',
+    ui_().ButtonSet.OK);
+}
+
+/** Removes test rows, their certificate PDFs, their Gmail drafts and their summary tab. */
+function menuRemoveTestParticipants() {
+  var ui = ui_();
+  var reg = registerSheet_();
+  var settings = getSettings_();
+  var tests = readRows_(reg).filter(function (r) { return String(r.notes || '').indexOf(TEST_NOTE) === 0; });
+  if (!tests.length) { ui.alert('Remove test participants', 'No test participants found.', ui.ButtonSet.OK); return; }
+  var ok = ui.alert('Remove test participants', 'Delete the ' + tests.length + ' test row(s), their certificate PDFs, their Gmail drafts and the test summary tab?', ui.ButtonSet.YES_NO);
+  if (ok !== ui.Button.YES) return;
+
+  var pdfs = 0, drafts = 0, tabs = 0;
+  var emails = {};
+  tests.forEach(function (r) {
+    emails[String(r.email || '').trim().toLowerCase()] = true;
+    var id = String(r.certificate_id || '').trim();
+    if (id) {
+      try { var f = findCertificateFile_(settings, r.course_code, id); if (f) { f.setTrashed(true); pdfs++; } } catch (e) { /* folder may not exist */ }
+    }
+  });
+  try {
+    GmailApp.getDrafts().forEach(function (d) {
+      var m = d.getMessage();
+      var to = String(m.getTo() || '').toLowerCase();
+      if (m.getSubject().indexOf('Your Tsavone certificate') === 0 && Object.keys(emails).some(function (e) { return e && to.indexOf(e) !== -1; })) {
+        d.deleteDraft(); drafts++;
+      }
+    });
+  } catch (e) { /* Gmail not available: drafts stay */ }
+
+  tests.map(function (r) { return r.rowNumber; }).sort(function (a, b) { return b - a; })
+    .forEach(function (n) { reg.sh.deleteRow(n); });
+
+  // Summary tabs for the test course run, unless real participants share it
+  var tz = reg.ss.getSpreadsheetTimeZone();
+  var remaining = readRows_(reg);
+  var runKeys = {};
+  tests.forEach(function (r) {
+    if (isDate_(r.start_date)) runKeys[cleanCode_(r.course_code) + ' ' + Utilities.formatDate(r.start_date, tz, 'yyyy-MM-dd')] = true;
+  });
+  Object.keys(runKeys).forEach(function (k) {
+    var stillUsed = remaining.some(function (r) {
+      return isDate_(r.start_date) && cleanCode_(r.course_code) + ' ' + Utilities.formatDate(r.start_date, tz, 'yyyy-MM-dd') === k;
+    });
+    var sh = reg.ss.getSheetByName('Summary ' + k);
+    if (sh && !stillUsed) { reg.ss.deleteSheet(sh); tabs++; }
+  });
+  reg.ss.setActiveSheet(reg.sh);
+  ui.alert('Remove test participants',
+    'Removed ' + tests.length + ' test row(s), ' + pdfs + ' certificate PDF(s) (moved to Drive Bin), ' + drafts + ' Gmail draft(s) and ' + tabs + ' summary tab(s).',
+    ui.ButtonSet.OK);
 }
 
 /* ============================== VERIFICATION WEB APP ============================== */

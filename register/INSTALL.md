@@ -22,7 +22,7 @@ Everything runs on your own Google account. No outside services are used.
 | `Code.gs` | The whole program, including the QR code maker and the logo | Apps Script, file "Code" |
 | `Verify.html` | The verification web page | Apps Script, HTML file "Verify" |
 | `tsavone-logo.png` | The certificate logo as a picture. You do not need to upload it: setup saves it to your Drive automatically. | Only if you want to see or replace it |
-| `sample-rows.tsv` | Three test participants | Paste into the sheet to try the tool (section 7) |
+| `sample-rows.tsv` | Three test participants | Not needed: use Tsavone → Testing → Add test participants (section 7) |
 | `tests/` | Automatic checks for developers | Not needed in Apps Script |
 
 To copy a file from GitHub: open it, click **Raw** (or the copy icon), select all (Ctrl+A), copy (Ctrl+C).
@@ -201,11 +201,8 @@ If a font is not available in Google Docs, Docs uses a standard font instead. Af
 
 ## 7. Try it first with three test participants
 
-1. Open `sample-rows.tsv` in this folder, click **Raw**, then select all and copy.
-2. In the **Register** tab, click cell **A2** (the first cell under `certificate_id`) and paste (Ctrl+V). Three rows appear.
-   - If your sheet already has participants, click column A of the first empty row instead.
-3. Change the three email addresses to **your own address**. For example, `info+test1@tsavone.com`, `info+test2@tsavone.com` and `info+test3@tsavone.com` all arrive in the info@tsavone.com inbox.
-4. Run the menu items in order and check what you get:
+1. In the sheet, click **Tsavone → Testing → Add test participants**. Three rows appear: Test Participant One, Two and Three. Their emails are your own address with `+test1`, `+test2` and `+test3`, so test emails arrive in your inbox.
+2. Run the menu items in order and check what you get:
 
 | Menu item | What you should see |
 |---|---|
@@ -214,17 +211,20 @@ If a font is not available in Google Docs, Docs uses a standard font instead. Af
 | Create certificate IDs | One: `TSV-2027-T1.1-0001`. Two: `TSV-2027-T1.1-0002`. Three: no ID. |
 | Generate certificates, and choose **NO** when asked | 2 PDFs in Drive → Tsavone Certificates → T1.1; both rows become **Issued** |
 | Scan a certificate's QR code with your phone | The verification page shows **VALID** for that participant |
-| Select rows 2–4, then Email certificates | 2 Gmail drafts; row 4 is skipped because it did not pass |
+| Select the three test rows, then Email certificates | 2 Gmail drafts; the third row is skipped because that person did not pass |
 | Course summary → choose T1.1, 10 Mar 2027 | Participants 3, pass rate 67%, average improvement +23.3 |
-| Change row 2's status to **Revoked**, then refresh the verification page | **REVOKED** |
+| Change a test row's status to **Revoked**, then refresh the verification page | **REVOKED** |
 
-### Delete the test afterwards
-1. **Register tab:** select the three test rows (click row numbers 2–4), right-click and choose **Delete rows**.
-2. **Google Drive:** open **Tsavone Certificates → T1.1** and delete the two test PDFs. Delete the T1.1 folder if it is empty, then empty the Drive **Bin**.
-3. **Gmail → Drafts:** delete the two test drafts.
-4. **Summary tab:** right-click the **"Summary T1.1 2027-03-10"** tab and choose **Delete**.
+### Remove the test afterwards
+Click **Tsavone → Testing → Remove test participants** and confirm. This removes:
+- the test rows
+- their certificate PDFs (moved to the Drive Bin)
+- their Gmail drafts
+- the test summary tab
 
-Once the test rows are deleted, numbering starts again from `-0001` for real participants on the same course and year. That is why you should never send out test certificates.
+Real participants are never touched; only rows whose notes start with "TEST ROW" are removed. Once the test rows are gone, numbering starts again from `-0001` for real participants on the same course and year. That is why you should never send out test certificates.
+
+(`sample-rows.tsv` holds the same three rows, if you prefer to paste them by hand.)
 
 ---
 
