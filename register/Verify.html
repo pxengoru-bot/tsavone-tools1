@@ -48,7 +48,7 @@
   <div class="bar" aria-hidden="true"></div>
   <div class="inner">
     <div class="brand">
-      <? if (logo) { ?><img src="<?= logo ?>" alt="Tsavone Consulting"><? } else { ?>
+      <? if (logo && /^data:image\/(png|jpeg|gif);base64,[A-Za-z0-9+\/=]+$/.test(logo)) { ?><img src="<?!= logo ?>" alt="Tsavone Consulting"><? } else { ?>
       <span class="word">TSAVONE<small>CONSULTING</small></span><? } ?>
     </div>
     <h1>Verify a Tsavone certificate</h1>
