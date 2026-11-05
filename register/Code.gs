@@ -988,7 +988,8 @@ function menuAddTestParticipants() {
     ui_().alert('Add test participants', 'Test participants are already in the Register. Use Tsavone > Testing > Remove test participants first if you want to start again.', ui_().ButtonSet.OK);
     return;
   }
-  var start = new Date(2027, 2, 10), end = new Date(2027, 2, 14);
+  // Written as text so the sheet reads them in its own time zone (a Date made here could shift by a day)
+  var start = '2027-03-10', end = '2027-03-14';
   var people = [
     ['Test Participant One', 'Sample Organisation A', 100, 45, 82],
     ['Test Participant Two', 'Sample Organisation B', 90, 50, 68],

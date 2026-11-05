@@ -344,7 +344,9 @@ false && sample.forEach((r, i) => {
 run('add test participants', () => ctx.menuAddTestParticipants());
 ok('3 test rows added at row 2', reg.getRange(2, 2, 3, 1).getValues().map((r) => r[0]).join('|') === 'Test Participant One|Test Participant Two|Test Participant Three', reg._grid.slice(1, 4));
 ok('test emails use own address', reg.getRange(2, 4).getValues()[0][0] === 'px.engoru+test1@gmail.com', reg.getRange(2, 4).getValues());
-ok('test dates are dates', Object.prototype.toString.call(reg.getRange(2, 8).getValues()[0][0]) === '[object Date]');
+ok('test dates written as ISO text for the sheet to parse', reg.getRange(2, 8).getValues()[0][0] === '2027-03-10');
+// Sheets turns ISO text into dates; do the same here
+for (let r = 1; r <= 3; r++) for (const c of [7, 8]) reg._grid[r][c] = new Date(reg._grid[r][c] + 'T00:00:00+03:00');
 run('add test participants twice', () => ctx.menuAddTestParticipants());
 ok('no duplicate test rows', reg.getLastRow() === 4, reg.getLastRow());
 run('onOpen', () => ctx.onOpen());
